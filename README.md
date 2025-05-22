@@ -1,4 +1,4 @@
-# priority_queue_controller_realized_by_Golang# 优先级队列控制器（单二进制原型）设计文档
+# 优先级队列控制器（单二进制原型）设计文档
 
 ## 1 目标与范围
 一个 **轻量级、单可执行文件** 的原型，演示如何将自定义 `TaskRequest` CRD 按 *优先级* 转化为 Kubernetes `Job`，并通过“提升机制”避免低优先级任务饥饿。生产环境部署应拆分关注点到独立包，并补充完整的错误处理、指标与 Leader 选举。
@@ -7,13 +7,15 @@
 ## 2 关键组件与流程
 ```mermaid
 graph TD
-  A[TaskRequest CRD] --watch--> B(Controller‑Runtime Reconciler)
-  B --enqueue--> C[Redis Sorted‑Set taskqueue]
+  A[TaskRequest CRD] -->|watch| B(Controller-Runtime Reconciler)
+  B -->|enqueue| C[Redis Sorted-Set taskqueue]
+
   subgraph 提升协程
-    C --每 2 分钟--> D[提升过期任务]
+    C -->|每 2 分钟| D[提升过期任务]
   end
-  E[Dispatcher 协程] --dequeue--> C
-  E --create Job--> F[K8s Job (batch/v1)]
+
+  E[Dispatcher 协程] -->|dequeue| C
+  E -->|create Job| F[K8s Job (batch v1)]
 ```
 1. **TaskRequestReconciler** – 监听 `TaskRequest` 新增/变更，仅入队一次（用注解防重）。
 2. **RedisPriorityQueue** – 通过 `score = priority×1e12 + timestamp` 排序，同优先级内 FIFO。后台定时器将等待超过 `promoteDur` 的任务 *降分*（即提优先级）。
