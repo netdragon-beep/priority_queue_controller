@@ -27,11 +27,15 @@ import (
 // -----------------------------------------------------------------------------
 // 1. CRD Go 类型（匹配 YAML 定义）
 // -----------------------------------------------------------------------------
+type TaskRequestStatus struct {
+	// Fill in once you need status fields
+}
 
 type TaskRequest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              TaskRequestSpec `json:"spec,omitempty"`
+	Spec              TaskRequestSpec   `json:"spec,omitempty"`
+	Status            TaskRequestStatus `json:"status,omitempty"`
 }
 
 type TaskRequestSpec struct {
@@ -57,6 +61,23 @@ func addTaskRequestToScheme(s *runtime.Scheme) error {
 	)
 	metav1.AddToGroupVersion(s, gvk)
 	return nil
+}
+
+// DeepCopyObject 实现 runtime.Object 接口
+func (in *TaskRequest) DeepCopyObject() runtime.Object {
+	if in == nil {
+		return nil
+	}
+	out := *in
+	return &out
+}
+
+func (in *TaskRequestList) DeepCopyObject() runtime.Object {
+	if in == nil {
+		return nil
+	}
+	out := *in
+	return &out
 }
 
 // -----------------------------------------------------------------------------
