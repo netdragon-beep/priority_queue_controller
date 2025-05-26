@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -150,10 +151,22 @@ func (q *RedisPriorityQueue) StartPromotion(ctx context.Context) {
 
 // 辅助方法：将 Redis 成员字符串 <-> namespace/name 映射。
 func keyFor(tr *TaskRequest) string { return fmt.Sprintf("%s/%s", tr.Namespace, tr.Name) }
+
+// func parseKey(k string) types.NamespacedName {
+// 	parts := types.NamespacedName{}
+// 	fmt.Sscanf(k, "%s/%s", &parts.Namespace, &parts.Name)
+// 	return parts
+// }
+
 func parseKey(k string) types.NamespacedName {
-	parts := types.NamespacedName{}
-	fmt.Sscanf(k, "%s/%s", &parts.Namespace, &parts.Name)
-	return parts
+	ss := strings.SplitN(k, "/", 2)
+	if len(ss) != 2 {
+		return types.NamespacedName{} // 格式不对就返回空
+	}
+	return types.NamespacedName{
+		Namespace: ss[0],
+		Name:      ss[1],
+	}
 }
 
 // -----------------------------------------------------------------------------
