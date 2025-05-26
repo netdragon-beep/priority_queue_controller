@@ -90,5 +90,38 @@ score = priority*1e12 + epochNano
    ```  
 5. 观察在同命名空间生成的 Job 与 Pod。
 
+## 9 新增加了测试代码跑demo _test.go文件
+
+```bash
+go test -v ./...
+
+```
+你应该看到以下三个测试项全部通过：
+
+    TestPriorityAndFIFO
+    验证：
+
+        按优先级（Priority 值）严格出队，小值优先
+
+        同一优先级任务按 FIFO（先进先出）顺序出队
+
+    TestPromotion
+    使用短的 promotion 间隔，确认：
+
+        低优先级任务在 Redis 中的 score 会定期减少（实际把它“提级”）
+
+        提升后，老的低优先级任务会先于后入队的同级任务出队
+
+    TestDynamicEnqueuePreemption
+    验证在以下场景下出队顺序正确：
+
+        先入队一个低优先级任务
+
+        再入队一个更高优先级任务
+        …结果应当是后入队的高优先级任务先于先入队的低优先级任务出队。
+
+
+
+
 **Happy hacking!**
 
