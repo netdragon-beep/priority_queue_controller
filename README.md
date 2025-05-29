@@ -244,7 +244,7 @@ rules:
   resources: ["pods","jobs"]
   verbs: ["create","get","list","watch","delete"]
 ```  
-fileciteturn0file3
+
 
 ```yaml
 # RoleBinding: 将 Role 绑定到 ServiceAccount
