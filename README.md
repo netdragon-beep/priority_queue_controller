@@ -122,6 +122,236 @@ go test -v ./...
 
 
 
+```markdown
+# Priority Queue Controller API 文档 & 部署示例
 
-**Happy hacking!**
+以下内容可直接复制到项目根目录下的 `README.md`，方便与其他小组成员对接。
+
+---
+
+## 目录
+
+1. [API Reference](#api-reference)  
+2. [Go 类型定义](#go-类型定义)  
+3. [部署配置示例](#部署配置示例)  
+   - [Kustomize 快速部署](#kustomize-快速部署)  
+   - [ServiceAccount](#serviceaccount)  
+   - [RBAC 权限](#rbac-权限)  
+   - [Controller Deployment](#controller-deployment)  
+
+---
+
+## API Reference
+
+### CustomResourceDefinition
+
+位于 `config/crd/bases/scheduler.rcme.ai_taskrequests.yaml`：
+
+```yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: taskrequests.scheduler.rcme.ai
+spec:
+  group: scheduler.rcme.ai
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                priority:
+                  type: integer
+                payload:
+                  type: object
+  scope: Namespaced
+  names:
+    plural: taskrequests
+    singular: taskrequest
+    kind: TaskRequest
+```
+
+---
+
+## Go 类型定义
+
+位于 `pkg/api/v1alpha1/taskrequest_types.go`：
+
+```go
+package v1alpha1
+
+import (
+  metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+  "k8s.io/apimachinery/pkg/runtime/schema"
+)
+
+const (
+  // GroupVersion 标识
+  Group   = "scheduler.rcme.ai"
+  Version = "v1alpha1"
+)
+
+var SchemeGroupVersion = schema.GroupVersion{Group: Group, Version: Version}
+
+// TaskRequestSpec 定义了任务优先级及负载
+type TaskRequestSpec struct {
+  // Priority 数字越小优先级越高
+  Priority int               `json:"priority"`
+  // Payload 任意键值对载荷
+  Payload  map[string]string `json:"payload"`
+}
+
+// TaskRequest 状态对象
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+type TaskRequest struct {
+  metav1.TypeMeta   `json:",inline"`
+  metav1.ObjectMeta `json:"metadata,omitempty"`
+
+  Spec   TaskRequestSpec   `json:"spec,omitempty"`
+  Status TaskRequestStatus `json:"status,omitempty"`
+}
+
+// TaskRequestStatus 暂无额外字段，可扩展
+type TaskRequestStatus struct {
+  // 后续可自定义状态字段
+}
+
+// TaskRequestList 列表
+// +kubebuilder:object:root=true
+type TaskRequestList struct {
+  metav1.TypeMeta `json:",inline"`
+  metav1.ListMeta `json:"metadata,omitempty"`
+
+  Items []TaskRequest `json:"items"`
+}
+```
+
+---
+
+## 部署配置示例
+
+所有配置位于项目的 `config/` 目录，可通过 Kustomize 一键部署。
+
+### Kustomize 快速部署
+
+在 `config/kustomization.yaml` 中引入所有资源：
+
+```yaml
+resources:
+  - crd/bases/scheduler.rcme.ai_taskrequests.yaml
+  - rbac/service_account.yaml
+  - rbac/role.yaml
+  - rbac/role_binding.yaml
+  - manager/manager.yaml
+```
+
+部署命令：
+
+```bash
+kubectl apply -k config/
+```
+
+### ServiceAccount
+
+文件：`config/rbac/service_account.yaml`
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: taskrequest-sa
+  namespace: system
+```
+
+### RBAC 权限
+
+#### Role
+
+文件：`config/rbac/role.yaml`
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: taskrequest-controller
+  namespace: system
+rules:
+- apiGroups: ["scheduler.rcme.ai"]
+  resources: ["taskrequests", "taskrequests/status"]
+  verbs: ["get", "list", "watch", "update"]
+- apiGroups: [""]
+  resources: ["pods", "jobs"]
+  verbs: ["create", "get", "list", "watch", "delete"]
+```
+
+#### RoleBinding
+
+文件：`config/rbac/role_binding.yaml`
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: taskrequest-controller-binding
+  namespace: system
+subjects:
+- kind: ServiceAccount
+  name: taskrequest-sa
+  namespace: system
+roleRef:
+  kind: Role
+  name: taskrequest-controller
+  apiGroup: rbac.authorization.k8s.io
+```
+
+### Controller Deployment
+
+文件：`config/manager/manager.yaml`
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taskrequest-controller
+  namespace: system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  template:
+    metadata:
+      labels:
+        control-plane: controller-manager
+    spec:
+      serviceAccountName: taskrequest-sa
+      containers:
+      - name: manager
+        image: your-registry/taskrequest-controller:latest
+        command:
+        - /manager
+        args:
+        - "--metrics-addr=0"
+        - "--leader-elect"
+        env:
+        - name: REDIS_ADDR
+          value: "redis:6379"
+        resources:
+          requests:
+            cpu:    "100m"
+            memory: "128Mi"
+          limits:
+            cpu:    "500m"
+            memory: "512Mi"
+```
+
+---
+
+请小组成员根据以上文档更新部署脚本、测试环境或开发流程。如有字段或示例需要调整，欢迎在本 README 下发起 PR。
 
