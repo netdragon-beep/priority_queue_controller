@@ -121,31 +121,13 @@ go test -v ./...
         …结果应当是后入队的高优先级任务先于先入队的低优先级任务出队。
 
 
+ 
 
-```markdown
-# Priority Queue Controller API 文档 & 部署示例
-
-以下内容可直接复制到项目根目录下的 `README.md`，方便与其他小组成员对接。
-
----
-
-## 目录
-
-1. [API Reference](#api-reference)  
-2. [Go 类型定义](#go-类型定义)  
-3. [部署配置示例](#部署配置示例)  
-   - [Kustomize 快速部署](#kustomize-快速部署)  
-   - [ServiceAccount](#serviceaccount)  
-   - [RBAC 权限](#rbac-权限)  
-   - [Controller Deployment](#controller-deployment)  
-
----
+---  
 
 ## API Reference
 
 ### CustomResourceDefinition
-
-位于 `config/crd/bases/scheduler.rcme.ai_taskrequests.yaml`：
 
 ```yaml
 apiVersion: apiextensions.k8s.io/v1
@@ -174,31 +156,20 @@ spec:
     plural: taskrequests
     singular: taskrequest
     kind: TaskRequest
-```
+```  
+> 该 CRD 定义了 `scheduler.rcme.ai/v1alpha1` 组下的 `TaskRequest` 资源。
 
----
-
-## Go 类型定义
-
-位于 `pkg/api/v1alpha1/taskrequest_types.go`：
+### Go 类型定义
 
 ```go
-package v1alpha1
-
-import (
-  metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-  "k8s.io/apimachinery/pkg/runtime/schema"
-)
-
+// GroupVersion, Scheme
 const (
-  // GroupVersion 标识
   Group   = "scheduler.rcme.ai"
   Version = "v1alpha1"
 )
-
 var SchemeGroupVersion = schema.GroupVersion{Group: Group, Version: Version}
 
-// TaskRequestSpec 定义了任务优先级及负载
+// TaskRequestSpec 定义
 type TaskRequestSpec struct {
   // Priority 数字越小优先级越高
   Priority int               `json:"priority"`
@@ -206,9 +177,7 @@ type TaskRequestSpec struct {
   Payload  map[string]string `json:"payload"`
 }
 
-// TaskRequest 状态对象
-// +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
+// TaskRequest 资源主体
 type TaskRequest struct {
   metav1.TypeMeta   `json:",inline"`
   metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -217,49 +186,37 @@ type TaskRequest struct {
   Status TaskRequestStatus `json:"status,omitempty"`
 }
 
-// TaskRequestStatus 暂无额外字段，可扩展
+// TaskRequestStatus 暂无额外字段，可在未来扩展
 type TaskRequestStatus struct {
-  // 后续可自定义状态字段
+  // Fill in once you need status fields
 }
 
-// TaskRequestList 列表
-// +kubebuilder:object:root=true
+// TaskRequestList 列表类型
 type TaskRequestList struct {
   metav1.TypeMeta `json:",inline"`
   metav1.ListMeta `json:"metadata,omitempty"`
-
-  Items []TaskRequest `json:"items"`
+  Items           []TaskRequest `json:"items"`
 }
-```
+```  
+> Go 源码见 `pkg/api/v1alpha1/taskrequest_types.go`。
 
 ---
 
-## 部署配置示例
+## 配置示例
 
-所有配置位于项目的 `config/` 目录，可通过 Kustomize 一键部署。
-
-### Kustomize 快速部署
-
-在 `config/kustomization.yaml` 中引入所有资源：
+推荐使用 Kustomize 快速部署：
 
 ```yaml
+# config/kustomization.yaml
 resources:
   - crd/bases/scheduler.rcme.ai_taskrequests.yaml
   - rbac/service_account.yaml
   - rbac/role.yaml
   - rbac/role_binding.yaml
   - manager/manager.yaml
-```
-
-部署命令：
-
-```bash
-kubectl apply -k config/
-```
+```  
 
 ### ServiceAccount
-
-文件：`config/rbac/service_account.yaml`
 
 ```yaml
 apiVersion: v1
@@ -267,15 +224,12 @@ kind: ServiceAccount
 metadata:
   name: taskrequest-sa
   namespace: system
-```
+```  
 
 ### RBAC 权限
 
-#### Role
-
-文件：`config/rbac/role.yaml`
-
 ```yaml
+# Role: 允许读取和更新 CRD，以及管理 Pods/Jobs
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -284,17 +238,15 @@ metadata:
 rules:
 - apiGroups: ["scheduler.rcme.ai"]
   resources: ["taskrequests", "taskrequests/status"]
-  verbs: ["get", "list", "watch", "update"]
+  verbs: ["get","list","watch","update"]
 - apiGroups: [""]
-  resources: ["pods", "jobs"]
-  verbs: ["create", "get", "list", "watch", "delete"]
-```
-
-#### RoleBinding
-
-文件：`config/rbac/role_binding.yaml`
+  resources: ["pods","jobs"]
+  verbs: ["create","get","list","watch","delete"]
+```  
+fileciteturn0file3
 
 ```yaml
+# RoleBinding: 将 Role 绑定到 ServiceAccount
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -308,11 +260,10 @@ roleRef:
   kind: Role
   name: taskrequest-controller
   apiGroup: rbac.authorization.k8s.io
-```
+```  
+
 
 ### Controller Deployment
-
-文件：`config/manager/manager.yaml`
 
 ```yaml
 apiVersion: apps/v1
@@ -349,9 +300,8 @@ spec:
           limits:
             cpu:    "500m"
             memory: "512Mi"
-```
+```  
+
 
 ---
-
-请小组成员根据以上文档更新部署脚本、测试环境或开发流程。如有字段或示例需要调整，欢迎在本 README 下发起 PR。
 
