@@ -7,7 +7,7 @@
 ## 2 关键组件与流程
 ```mermaid
 graph TD
-  A[TaskRequest CRD] -->|watch| B(Controller-Runtime Reconciler)
+  A[TaskRequest CRD] -->|watch| B["Controller-Runtime Reconciler"]
   B -->|enqueue| C[Redis Sorted-Set taskqueue]
 
   subgraph 提升协程
@@ -15,7 +15,8 @@ graph TD
   end
 
   E[Dispatcher 协程] -->|dequeue| C
-  E -->|create Job| F[K8s Job (batch v1)]
+  E -->|create Job| F["K8s Job (batch v1)"]
+
 ```
 1. **TaskRequestReconciler** – 监听 `TaskRequest` 新增/变更，仅入队一次（用注解防重）。
 2. **RedisPriorityQueue** – 通过 `score = priority×1e12 + timestamp` 排序，同优先级内 FIFO。后台定时器将等待超过 `promoteDur` 的任务 *降分*（即提优先级）。
