@@ -1,0 +1,7 @@
+# config/kustomization.yaml
+resources:
+  - crd/bases/scheduler.rcme.ai_taskrequests.yaml
+  - rbac/service_account.yaml
+  - rbac/role.yaml
+  - rbac/role_binding.yaml
+  - manager/manager.yaml
