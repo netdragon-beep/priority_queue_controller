@@ -1,0 +1,14 @@
+# config/rbac/role_binding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: taskrequest-controller-binding
+  namespace: system
+subjects:
+- kind: ServiceAccount
+  name: taskrequest-sa
+  namespace: system
+roleRef:
+  kind: Role
+  name: taskrequest-controller
+  apiGroup: rbac.authorization.k8s.io

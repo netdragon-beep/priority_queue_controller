@@ -1,0 +1,34 @@
+kubernetes:
+  use_incluster: false  # Set to true when running in a Kubernetes cluster
+  kubeconfig_path: ""   # Leave empty to use default ~/.kube/config
+  namespace: "default"
+
+queue:
+  type: "memory"        # Options: "memory" or "redis"
+  redis_host: "localhost"
+  redis_port: 6379
+  queue_name: "taskqueue"
+  ttl: 120
+  max_size: 10000
+  default_priority: 100
+
+scheduler:
+  poll_interval_seconds: 1.0
+  retry_limit: 3
+  retry_backoff_seconds: 2.0
+
+api:
+  group: "scheduler.rcme.ai"
+  version: "v1alpha1"
+  plural: "taskrequests"
+
+promotion:
+  enabled: true
+  interval_seconds: 60
+  age_factor: 0.1
+  max_boost: 50
+
+listener:
+  enabled: false
+  mode: "http"          # Options: "http" or "grpc"
+  port: 8080

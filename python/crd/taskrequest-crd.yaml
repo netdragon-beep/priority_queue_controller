@@ -1,0 +1,70 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: taskrequests.scheduler.rcme.ai
+spec:
+  group: scheduler.rcme.ai
+  names:
+    kind: TaskRequest
+    listKind: TaskRequestList
+    plural: taskrequests
+    singular: taskrequest
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                priority:
+                  type: integer
+                  description: "Priority of the task (lower values have higher priority)"
+                payload:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                  description: "Task payload data"
+              required:
+                - priority
+            status:
+              type: object
+              properties:
+                state:
+                  type: string
+                  description: "Current state of the task"
+                queuedAt:
+                  type: string
+                  format: date-time
+                  description: "When the task was added to the queue"
+                startedAt:
+                  type: string
+                  format: date-time
+                  description: "When the task started processing"
+                completedAt:
+                  type: string
+                  format: date-time
+                  description: "When the task completed processing"
+                message:
+                  type: string
+                  description: "Additional status information"
+                retryCount:
+                  type: integer
+                  description: "Number of retry attempts"
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Priority
+          type: integer
+          description: Task priority
+          jsonPath: .spec.priority
+        - name: State
+          type: string
+          description: Current state
+          jsonPath: .status.state
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
