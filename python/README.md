@@ -1,53 +1,60 @@
-# Kubernetes Priority Queue Controller
+以下是该项目 README 的中文翻译，保留了原有的结构与格式。
 
-This project implements a Kubernetes controller that manages task scheduling using a priority queue. It watches for TaskRequest custom resources and processes them according to their priority.
+---
 
-## Project Structure
+## Kubernetes 优先队列控制器
+
+该项目实现了一个 Kubernetes 控制器，用于通过优先级队列管理任务调度。它监听 `TaskRequest` 自定义资源，并根据优先级对它们进行处理。
+
+### 项目结构
 
 ```
 python/
-├── priority_queue.py     # Priority queue implementation
-├── controller.py         # Kubernetes controller implementation
-├── scheduler.py          # Task scheduler implementation
-├── reconciler.py         # Reconciliation logic
-├── main.py               # Main entry point
-├── config.py             # Configuration handling
-├── config.yaml           # Sample configuration
-└── requirements.txt      # Dependencies
+├── priority_queue.py     # 优先队列实现
+├── controller.py         # Kubernetes 控制器实现
+├── scheduler.py          # 任务调度器实现
+├── reconciler.py         # 对账逻辑
+├── main.py               # 主入口
+├── config.py             # 配置处理
+├── config.yaml           # 示例配置
+└── requirements.txt      # 依赖项
 ```
 
-## Features
+### 特性
 
-- **Priority Queue**: Both in-memory and Redis-backed implementations
-- **Kubernetes Integration**: Watches for TaskRequest CRDs and processes them
-- **Dynamic Priority Adjustment**: Prevents task starvation by adjusting priorities over time
-- **Configurable**: Easily configure through YAML or environment variables
-- **Listener Interface**: Integration point for external services to submit tasks
+- **优先队列**：支持内存和 Redis 两种实现
+- **Kubernetes 集成**：监听 `TaskRequest` CRD 并进行处理
+- **动态优先级调整**：通过随时间调整优先级来防止任务饥饿
+- **可配置**：可通过 YAML 或环境变量进行配置
+- **监听器接口**：为外部服务提供直接向队列提交任务的集成点
 
-## Installation
+### 安装
 
-1. Install dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
+安装依赖项：
 
-2. Configure the application:
-   - Edit `config.yaml` or set environment variables
+```bash
+pip install -r requirements.txt
+```
 
-3. Apply the TaskRequest CRD to your Kubernetes cluster:
-   ```
-   kubectl apply -f path/to/taskrequest-crd.yaml
-   ```
+配置应用：
 
-## Usage
+- 编辑 `config.yaml` 或设置相应的环境变量
 
-### Running the Controller
+将 `TaskRequest` CRD 应用到 Kubernetes 集群：
 
-```python
+```bash
+kubectl apply -f path/to/taskrequest-crd.yaml
+```
+
+### 使用
+
+#### 运行控制器
+
+```bash
 python main.py
 ```
 
-### Creating a TaskRequest
+#### 创建一个 TaskRequest
 
 ```yaml
 apiVersion: scheduler.rcme.ai/v1alpha1
@@ -64,18 +71,19 @@ spec:
       max_tokens: 1000
 ```
 
-### Integration with Listener Group
+#### 与监听器组集成
 
-The controller provides an interface for external services to submit tasks directly to the queue without going through Kubernetes. This can be used by the Listener Group to submit user requests.
+该控制器提供了一个接口，允许外部服务直接向队列提交任务，而无需经过 Kubernetes。监听器组可以通过此方式提交用户请求。
 
-Example:
+示例：
+
 ```python
 from controller import ListenerInterface
 
-# Create a listener interface
+# 创建一个监听器接口
 listener = ListenerInterface(queue)
 
-# Submit a task
+# 提交一个任务
 await listener.submit_task(
     task_id="user-request-123",
     priority=50,
@@ -90,58 +98,64 @@ await listener.submit_task(
 )
 ```
 
-## Configuration Options
+### 配置选项
 
-### Kubernetes
-- `use_incluster`: Whether to use in-cluster configuration
-- `kubeconfig_path`: Path to kubeconfig file
-- `namespace`: Namespace to watch
+#### Kubernetes
 
-### Queue
-- `type`: Queue type ("memory" or "redis")
-- `redis_host`: Redis host
-- `redis_port`: Redis port
-- `queue_name`: Name of the queue
-- `ttl`: Time-to-live for queue items
-- `max_size`: Maximum queue size
-- `default_priority`: Default priority for tasks
+- `use_incluster`：是否使用集群内部配置
+- `kubeconfig_path`：kubeconfig 文件路径
+- `namespace`：监听的命名空间
 
-### Scheduler
-- `poll_interval_seconds`: Interval between polling the queue
-- `retry_limit`: Maximum retry attempts
-- `retry_backoff_seconds`: Delay between retries
+#### 队列
 
-### Promotion
-- `enabled`: Enable priority promotion
-- `interval_seconds`: Interval between promotions
-- `age_factor`: Factor for priority adjustment
-- `max_boost`: Maximum priority boost
+- `type`：队列类型（“memory” 或 “redis”）
+- `redis_host`：Redis 主机
+- `redis_port`：Redis 端口
+- `queue_name`：队列名称
+- `ttl`：队列项目的生存时间
+- `max_size`：队列最大容量
+- `default_priority`：任务的默认优先级
 
-### Listener
-- `enabled`: Enable listener interface
-- `mode`: Listener mode ("http" or "grpc")
-- `port`: Listener port
+#### 调度器
 
-## Go to Python Conversion Notes
+- `poll_interval_seconds`：轮询队列的间隔（秒）
+- `retry_limit`：最大重试次数
+- `retry_backoff_seconds`：重试间隔（秒）
 
-This project was converted from a Go implementation to Python. The following mappings were used:
+#### 优先提升
 
-| Go Feature | Python Equivalent |
-|------------|-------------------|
-| goroutines | asyncio tasks     |
-| channels   | asyncio queues    |
-| sync.Mutex | asyncio.Lock      |
-| client-go  | kubernetes-client |
-| container/heap | heapq module |
+- `enabled`：是否启用优先级提升
+- `interval_seconds`：执行提升的间隔（秒）
+- `age_factor`：优先级调整系数
+- `max_boost`：最大优先级提升值
 
-## Testing
+#### 监听器
 
-Run the tests with:
-```
+- `enabled`：是否启用监听器接口
+- `mode`：监听器模式（“http” 或 “grpc”）
+- `port`：监听器端口
+
+### Go 到 Python 的对应说明
+
+该项目从 Go 实现转换到 Python 时，使用了以下对应关系：
+
+| Go 特性           | Python 等价      |
+| ----------------- | ---------------- |
+| goroutines        | asyncio 任务     |
+| channels          | asyncio 队列     |
+| sync.Mutex        | asyncio.Lock     |
+| client-go         | kubernetes-client|
+| container/heap    | heapq 模块       |
+
+### 测试
+
+使用以下命令运行测试：
+
+```bash
 pytest
 ```
 
-## Example Test Case
+#### 示例测试用例
 
 ```python
 import pytest
@@ -150,17 +164,17 @@ from priority_queue import create_queue
 
 @pytest.mark.asyncio
 async def test_priority_queue():
-    # Create an in-memory queue
+    # 创建一个内存队列
     queue = create_queue("memory")
     
-    # Add tasks with different priorities
+    # 添加不同优先级的任务
     await queue.enqueue(priority=100, task_id="task1", payload={"data": "task1"})
     await queue.enqueue(priority=50, task_id="task2", payload={"data": "task2"})
     await queue.enqueue(priority=150, task_id="task3", payload={"data": "task3"})
     
-    # Verify tasks are dequeued in priority order
+    # 验证任务按优先级顺序出队
     result1 = await queue.dequeue()
-    assert result1[1] == "task2"  # Lowest priority value (highest priority) first
+    assert result1[1] == "task2"  # 优先级值最小（优先级最高）先出
     
     result2 = await queue.dequeue()
     assert result2[1] == "task1"
@@ -168,5 +182,10 @@ async def test_priority_queue():
     result3 = await queue.dequeue()
     assert result3[1] == "task3"
     
-    # Verify queue is empty
+    # 验证队列已空
     assert await queue.dequeue() is None
+```
+
+--- 
+
+以上即为 README 的中文翻译版本，涵盖了项目介绍、结构、特性、安装步骤、使用说明、配置选项、Go 与 Python 对应说明，以及测试示例。若有进一步需求，可根据此模版修改或补充。
